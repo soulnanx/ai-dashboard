@@ -2,9 +2,15 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#0f172a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="AI Dashboard">
+  <meta name="description" content="Monitor de sistema macOS em tempo real">
   <title>AI Dashboard - Monitor do Sistema</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="manifest" href="manifest.json">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
@@ -14,6 +20,7 @@
       <h1>🖥️ AI Dashboard</h1>
       <p class="subtitle">Monitor de Sistema - macOS</p>
       <div class="status-dot" id="statusDot"></div>
+      <button class="reconnect-btn" id="reconnectBtn" style="display:none;">🔄 Reconectar</button>
     </header>
 
     <div class="grid">

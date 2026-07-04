@@ -1,4 +1,8 @@
-const socket = io();
+const socket = io({
+  reconnection: true,
+  reconnectionAttempts: 5,
+  reconnectionDelay: 1000
+});
 
 // Formatação de bytes para GB
 function formatBytes(bytes) {
@@ -123,6 +127,19 @@ function updateSystemInfo(osInfo, uptime) {
   document.getElementById('sysUptime').textContent = formatUptime(uptime);
 }
 
+// Mostrar/esconder botão de reconexão
+function toggleReconnectButton(show) {
+  const btn = document.getElementById('reconnectBtn');
+  btn.style.display = show ? 'inline-block' : 'none';
+
+  if (show) {
+    btn.onclick = () => {
+      socket.connect();
+      toggleReconnectButton(false);
+    };
+  }
+}
+
 // WebSocket - Receber dados
 socket.on('system-update', (data) => {
   updateCPU(data);
@@ -144,7 +161,7 @@ async function loadInitialData() {
 
     updateDisk(data.disk);
     updateProcesses(data.topProcesses);
-    updateSystemInfo(data.osInfo, data.osInfo.uptime);
+    updateSystemInfo(data.osInfo, data.uptime);
   } catch (err) {
     console.error('Erro ao carregar dados iniciais:', err);
   }
@@ -153,12 +170,32 @@ async function loadInitialData() {
 // Status da conexão
 socket.on('connect', () => {
   document.getElementById('statusDot').classList.add('connected');
+  toggleReconnectButton(false);
   loadInitialData();
 });
 
 socket.on('disconnect', () => {
   document.getElementById('statusDot').classList.remove('connected');
+  toggleReconnectButton(true);
+});
+
+socket.on('reconnect_attempt', () => {
+  console.log('Tentando reconectar...');
+});
+
+socket.on('reconnect_failed', () => {
+  toggleReconnectButton(true);
 });
 
 // Carregar dados iniciais
 loadInitialData();
+
+// Prevenir zoom no iOS ao dar double-tap
+let lastTouchEnd = 0;
+document.addEventListener('touchend', (event) => {
+  const now = Date.now();
+  if (now - lastTouchEnd <= 300) {
+    event.preventDefault();
+  }
+  lastTouchEnd = now;
+}, false);
