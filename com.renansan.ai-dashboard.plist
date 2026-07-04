@@ -7,8 +7,8 @@
 
 	<key>ProgramArguments</key>
 	<array>
-		<string>/Users/renansan/.aionui/runtime/node/node-v24.11.0-darwin-x64/bin/node</string>
-		<string>/Users/renansan/Developer/projects/ai-server/ai-dashboard/server.js</string>
+		<string>/bin/bash</string>
+		<string>/Users/renansan/Developer/projects/ai-server/ai-dashboard/start-dashboard.sh</string>
 	</array>
 
 	<key>RunAtLoad</key>
@@ -29,7 +29,7 @@
 	<key>EnvironmentVariables</key>
 	<dict>
 		<key>PATH</key>
-		<string>/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+		<string>/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/Users/renansan/.nvm/versions/node/v24.18.0/bin</string>
 	</dict>
 </dict>
 </plist>
