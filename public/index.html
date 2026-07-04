@@ -23,6 +23,14 @@
       <button class="reconnect-btn" id="reconnectBtn" style="display:none;">🔄 Reconectar</button>
     </header>
 
+    <!-- Navegação por Tabs -->
+    <nav class="tabs">
+      <button class="tab active" data-tab="system">🖥️ Sistema</button>
+      <button class="tab" data-tab="openrouter">💰 OpenRouter</button>
+    </nav>
+
+    <!-- Tab: Sistema (conteúdo existente) -->
+    <div class="tab-content active" id="system-tab">
     <div class="grid">
       <!-- CPU -->
       <div class="card cpu-card">
@@ -151,6 +159,86 @@
         </div>
       </div>
     </div>
+    </div> <!-- Fim da tab Sistema -->
+
+    <!-- Tab: OpenRouter -->
+    <div class="tab-content" id="openrouter-tab">
+      <div class="grid">
+        <!-- Créditos -->
+        <div class="card or-credits-card">
+          <div class="card-header">
+            <span class="card-icon">💳</span>
+            <h2>Créditos OpenRouter</h2>
+          </div>
+          <div class="card-body">
+            <div class="stats">
+              <div class="stat">
+                <span class="stat-label">Créditos Totais</span>
+                <span class="stat-value" id="orTotalCredits">--</span>
+              </div>
+              <div class="stat">
+                <span class="stat-label">Uso Total</span>
+                <span class="stat-value" id="orTotalUsage">--</span>
+              </div>
+              <div class="stat">
+                <span class="stat-label">Restante</span>
+                <span class="stat-value" id="orRemaining">--</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Uso por Período -->
+        <div class="card or-usage-card">
+          <div class="card-header">
+            <span class="card-icon">📊</span>
+            <h2>Uso por Período</h2>
+          </div>
+          <div class="card-body">
+            <div class="stats">
+              <div class="stat">
+                <span class="stat-label">Hoje</span>
+                <span class="stat-value" id="orDaily">--</span>
+              </div>
+              <div class="stat">
+                <span class="stat-label">Esta Semana</span>
+                <span class="stat-value" id="orWeekly">--</span>
+              </div>
+              <div class="stat">
+                <span class="stat-label">Este Mês</span>
+                <span class="stat-value" id="orMonthly">--</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Modelos Configurados -->
+        <div class="card or-models-card">
+          <div class="card-header">
+            <span class="card-icon">🤖</span>
+            <h2>Modelos Configurados</h2>
+          </div>
+          <div class="card-body">
+            <div class="models-list" id="orModelsList">
+              <!-- Modelos serão inseridos via JS -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Log de Uso Local -->
+        <div class="card or-log-card">
+          <div class="card-header">
+            <span class="card-icon">📝</span>
+            <h2>Log de Uso Local</h2>
+          </div>
+          <div class="card-body">
+            <div class="usage-log" id="orUsageLog">
+              Nenhum registro local ainda.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div> <!-- Fim da tab OpenRouter -->
 
     <footer>
       <p>Atualizado em tempo real via WebSocket • <span id="lastUpdate">--</span></p>

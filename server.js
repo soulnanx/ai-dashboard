@@ -3,6 +3,8 @@ const http = require('http');
 const { Server } = require('socket.io');
 const si = require('systeminformation');
 const path = require('path');
+const fs = require('fs');
+// Node 18+ tem fetch global; não precisa de importar nada
 
 const app = express();
 const server = http.createServer(app);
@@ -12,6 +14,109 @@ const PORT = 3000;
 
 // Servir arquivos estáticos
 app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.json()); // Para ler JSON no body de POST
+
+// ========== OpenRouter API Proxy ==========
+const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY || '';
+const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1';
+const USAGE_LOG_FILE = path.join(__dirname, 'openrouter-usage.json');
+
+/**
+ * Faz uma requisição autenticada para a API do OpenRouter.
+ * @param {string} endpoint - Caminho após /api/v1/
+ * @param {object} options - Opções do fetch (method, body, etc)
+ * @returns {Promise<object>} Resposta JSON
+ */
+async function openRouterRequest(endpoint, options = {}) {
+  const url = `${OPENROUTER_BASE_URL}${endpoint}`;
+  const headers = {
+    'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+    'Content-Type': 'application/json',
+    ...options.headers
+  };
+  const response = await fetch(url, { ...options, headers });
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`OpenRouter API error: ${response.status} ${text}`);
+  }
+  return response.json();
+}
+
+// GET /api/openrouter/credits → Proxy para /api/v1/credits
+app.get('/api/openrouter/credits', async (req, res) => {
+  try {
+    const data = await openRouterRequest('/credits');
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /api/openrouter/key → Proxy para /api/v1/key
+app.get('/api/openrouter/key', async (req, res) => {
+  try {
+    const data = await openRouterRequest('/key');
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /api/openrouter/models → Proxy para /api/v1/models (filtra pelos modelos do .zshrc)
+app.get('/api/openrouter/models', async (req, res) => {
+  try {
+    const data = await openRouterRequest('/models');
+    // Filtrar apenas os modelos que o usuário configurou no .zshrc
+    const configuredModels = [
+      'z-ai/glm-5.2',
+      'moonshotai/kimi-k2.7-code',
+      'tencent/hy3-preview'
+    ];
+    const filtered = data.data.filter(m => configuredModels.includes(m.id));
+    res.json({ data: filtered });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /api/openrouter/usage-log → Lê o arquivo de log local
+app.get('/api/openrouter/usage-log', (req, res) => {
+  if (!fs.existsSync(USAGE_LOG_FILE)) {
+    return res.json({ data: [] });
+  }
+  try {
+    const content = fs.readFileSync(USAGE_LOG_FILE, 'utf8');
+    const log = JSON.parse(content);
+    res.json({ data: log });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/openrouter/log → Registra uso no log local
+app.post('/api/openrouter/log', (req, res) => {
+  const entry = req.body;
+  // Validação básica
+  if (!entry.model || !entry.cost) {
+    return res.status(400).json({ error: 'Campos obrigatórios: model, cost' });
+  }
+  entry.timestamp = entry.timestamp || Date.now();
+  let log = [];
+  if (fs.existsSync(USAGE_LOG_FILE)) {
+    try {
+      log = JSON.parse(fs.readFileSync(USAGE_LOG_FILE, 'utf8'));
+    } catch (e) {
+      log = [];
+    }
+  }
+  log.push(entry);
+  // Manter apenas os últimos 1000 registros
+  if (log.length > 1000) {
+    log = log.slice(-1000);
+  }
+  fs.writeFileSync(USAGE_LOG_FILE, JSON.stringify(log, null, 2));
+  res.json({ success: true });
+});
 
 // Função pra formatar processos
 function formatProcesses(processList, totalMem) {
@@ -32,13 +137,14 @@ function formatProcesses(processList, totalMem) {
 // API REST para dados pontuais
 app.get('/api/system', async (req, res) => {
   try {
-    const [cpu, mem, battery, fsSize, osInfo, processes] = await Promise.all([
+    const [cpu, mem, battery, fsSize, osInfo, processes, timeData] = await Promise.all([
       si.cpu(),
       si.mem(),
       si.battery(),
       si.fsSize(),
       si.osInfo(),
-      si.processes()
+      si.processes(),
+      si.time()
     ]);
 
     const topProcesses = formatProcesses(processes.list, mem.total);
@@ -50,7 +156,7 @@ app.get('/api/system', async (req, res) => {
       disk: fsSize,
       osInfo,
       topProcesses,
-      uptime: osInfo.uptime
+      uptime: timeData.uptime || 0
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -63,12 +169,13 @@ io.on('connection', (socket) => {
 
   const sendRealTimeData = async () => {
     try {
-      const [cpu, mem, battery, currentLoad, processes] = await Promise.all([
+      const [cpu, mem, battery, currentLoad, processes, timeData] = await Promise.all([
         si.cpu(),
         si.mem(),
         si.battery(),
         si.currentLoad(),
-        si.processes()
+        si.processes(),
+        si.time()
       ]);
 
       const topProcesses = formatProcesses(processes.list, mem.total);
@@ -79,6 +186,7 @@ io.on('connection', (socket) => {
         battery,
         currentLoad,
         topProcesses,
+        uptime: timeData.uptime || 0,
         timestamp: Date.now()
       });
     } catch (err) {

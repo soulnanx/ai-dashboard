@@ -199,3 +199,173 @@ document.addEventListener('touchend', (event) => {
   }
   lastTouchEnd = now;
 }, false);
+
+// ========== Sistema de Tabs ==========
+let activeTab = 'system';
+let openRouterRefreshInterval = null;
+
+/**
+ * Inicializa o sistema de tabs.
+ * Adiciona event listeners aos botões e gerencia a troca de abas.
+ */
+function initTabs() {
+  const tabs = document.querySelectorAll('.tab');
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      const targetTab = tab.dataset.tab;
+      if (targetTab === activeTab) return;
+
+      // Atualizar botões
+      tabs.forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+
+      // Atualizar conteúdo visível
+      document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.remove('active');
+      });
+      document.getElementById(`${targetTab}-tab`).classList.add('active');
+
+      activeTab = targetTab;
+
+      // Se entrou na tab do OpenRouter, carregar dados
+      if (targetTab === 'openrouter') {
+        loadOpenRouterData();
+        startOpenRouterAutoRefresh();
+      } else {
+        stopOpenRouterAutoRefresh();
+      }
+    });
+  });
+}
+
+// ========== OpenRouter Functions ==========
+
+/**
+ * Carrega todos os dados do OpenRouter (créditos, key, modelos, log local).
+ */
+async function loadOpenRouterData() {
+  try {
+    const [creditsRes, keyRes, modelsRes, logRes] = await Promise.all([
+      fetch('/api/openrouter/credits'),
+      fetch('/api/openrouter/key'),
+      fetch('/api/openrouter/models'),
+      fetch('/api/openrouter/usage-log')
+    ]);
+
+    const credits = await creditsRes.json();
+    const key = await keyRes.json();
+    const models = await modelsRes.json();
+    const log = await logRes.json();
+
+    renderCredits(credits.data);
+    renderUsagePeriod(key.data);
+    renderModels(models.data);
+    renderUsageLog(log.data);
+  } catch (err) {
+    console.error('Erro ao carregar dados do OpenRouter:', err);
+  }
+}
+
+/**
+ * Renderiza o card de créditos.
+ * @param {object} data - { total_credits, total_usage }
+ */
+function renderCredits(data) {
+  if (!data) return;
+  const credits = data.total_credits || 0;
+  const usage = data.total_usage || 0;
+  const remaining = credits - usage;
+
+  document.getElementById('orTotalCredits').textContent = `$${credits.toFixed(2)}`;
+  document.getElementById('orTotalUsage').textContent = `$${usage.toFixed(2)}`;
+  document.getElementById('orRemaining').textContent = `$${remaining.toFixed(2)}`;
+}
+
+/**
+ * Renderiza o card de uso por período.
+ * @param {object} data - { usage_daily, usage_weekly, usage_monthly }
+ */
+function renderUsagePeriod(data) {
+  if (!data) return;
+  document.getElementById('orDaily').textContent = `$${data.usage_daily?.toFixed(2) || '0.00'}`;
+  document.getElementById('orWeekly').textContent = `$${data.usage_weekly?.toFixed(2) || '0.00'}`;
+  document.getElementById('orMonthly').textContent = `$${data.usage_monthly?.toFixed(2) || '0.00'}`;
+}
+
+/**
+ * Renderiza a lista de modelos configurados com seus preços.
+ * @param {Array} models - Lista de modelos da API
+ */
+function renderModels(models) {
+  const container = document.getElementById('orModelsList');
+  container.innerHTML = '';
+
+  if (!models || models.length === 0) {
+    container.innerHTML = '<p class="no-data">Nenhum modelo configurado encontrado.</p>';
+    return;
+  }
+
+  models.forEach(model => {
+    const pricePrompt = parseFloat(model.pricing?.prompt || 0) * 1000000; // por 1M tokens
+    const priceCompletion = parseFloat(model.pricing?.completion || 0) * 1000000;
+    const modelItem = document.createElement('div');
+    modelItem.className = 'model-item';
+    modelItem.innerHTML = `
+      <div class="model-name">${model.name || model.id}</div>
+      <div class="model-pricing">
+        <span>Prompt: $${pricePrompt.toFixed(2)}/1M</span>
+        <span>Completion: $${priceCompletion.toFixed(2)}/1M</span>
+      </div>
+    `;
+    container.appendChild(modelItem);
+  });
+}
+
+/**
+ * Renderiza o log de uso local.
+ * @param {Array} log - Lista de entradas de uso
+ */
+function renderUsageLog(log) {
+  const container = document.getElementById('orUsageLog');
+  container.innerHTML = '';
+
+  if (!log || log.length === 0) {
+    container.innerHTML = '<p class="no-data">Nenhum registro local ainda.</p>';
+    return;
+  }
+
+  // Mostrar últimos 10 registros
+  const recent = log.slice(-10).reverse();
+  recent.forEach(entry => {
+    const logItem = document.createElement('div');
+    logItem.className = 'log-item';
+    const date = new Date(entry.timestamp).toLocaleString('pt-BR');
+    logItem.innerHTML = `
+      <span class="log-model">${entry.model}</span>
+      <span class="log-cost">$${entry.cost?.toFixed(4) || '0.0000'}</span>
+      <span class="log-time">${date}</span>
+    `;
+    container.appendChild(logItem);
+  });
+}
+
+/**
+ * Inicia atualização automática da tab OpenRouter a cada 60s.
+ */
+function startOpenRouterAutoRefresh() {
+  if (openRouterRefreshInterval) return;
+  openRouterRefreshInterval = setInterval(loadOpenRouterData, 60000);
+}
+
+/**
+ * Para a atualização automática da tab OpenRouter.
+ */
+function stopOpenRouterAutoRefresh() {
+  if (openRouterRefreshInterval) {
+    clearInterval(openRouterRefreshInterval);
+    openRouterRefreshInterval = null;
+  }
+}
+
+// Inicializar tabs ao carregar a página
+document.addEventListener('DOMContentLoaded', initTabs);
