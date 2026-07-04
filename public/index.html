@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Dashboard - Monitor do Sistema</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🖥️ AI Dashboard</h1>
+      <p class="subtitle">Monitor de Sistema - macOS</p>
+      <div class="status-dot" id="statusDot"></div>
+    </header>
+
+    <div class="grid">
+      <!-- CPU -->
+      <div class="card cpu-card">
+        <div class="card-header">
+          <span class="card-icon">⚡</span>
+          <h2>CPU</h2>
+        </div>
+        <div class="card-body">
+          <div class="progress-bar">
+            <div class="progress-fill" id="cpuBar"></div>
+          </div>
+          <div class="stats">
+            <div class="stat">
+              <span class="stat-label">Uso</span>
+              <span class="stat-value" id="cpuUsage">--</span>
+            </div>
+            <div class="stat">
+              <span class="stat-label">Carga</span>
+              <span class="stat-value" id="cpuLoad">--</span>
+            </div>
+            <div class="stat">
+              <span class="stat-label">Cores</span>
+              <span class="stat-value" id="cpuCores">--</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Memória -->
+      <div class="card memory-card">
+        <div class="card-header">
+          <span class="card-icon">🧠</span>
+          <h2>Memória RAM</h2>
+        </div>
+        <div class="card-body">
+          <div class="progress-bar">
+            <div class="progress-fill" id="memBar"></div>
+          </div>
+          <div class="stats">
+            <div class="stat">
+              <span class="stat-label">Usada</span>
+              <span class="stat-value" id="memUsed">--</span>
+            </div>
+            <div class="stat">
+              <span class="stat-label">Livre</span>
+              <span class="stat-value" id="memFree">--</span>
+            </div>
+            <div class="stat">
+              <span class="stat-label">Total</span>
+              <span class="stat-value" id="memTotal">--</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bateria -->
+      <div class="card battery-card">
+        <div class="card-header">
+          <span class="card-icon">🔋</span>
+          <h2>Bateria</h2>
+        </div>
+        <div class="card-body">
+          <div class="battery-container">
+            <div class="battery-icon" id="batteryIcon">
+              <div class="battery-level" id="batteryLevel"></div>
+            </div>
+            <div class="battery-info">
+              <span class="battery-percent" id="batteryPercent">--</span>
+              <span class="battery-status" id="batteryStatus">--</span>
+            </div>
+          </div>
+          <div class="stats">
+            <div class="stat">
+              <span class="stat-label">Tempo Restante</span>
+              <span class="stat-value" id="batteryTime">--</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Armazenamento -->
+      <div class="card storage-card">
+        <div class="card-header">
+          <span class="card-icon">💾</span>
+          <h2>Armazenamento</h2>
+        </div>
+        <div class="card-body" id="diskInfo">
+          <!-- Discos serão inseridos via JS -->
+        </div>
+      </div>
+
+      <!-- Processos -->
+      <div class="card processes-card">
+        <div class="card-header">
+          <span class="card-icon">📊</span>
+          <h2>Top 10 Processos</h2>
+        </div>
+        <div class="card-body">
+          <div class="process-list" id="processList">
+            <!-- Processos serão inseridos via JS -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Sistema -->
+      <div class="card system-card">
+        <div class="card-header">
+          <span class="card-icon">ℹ️</span>
+          <h2>Sistema</h2>
+        </div>
+        <div class="card-body">
+          <div class="system-info">
+            <div class="info-row">
+              <span class="info-label">Hostname</span>
+              <span class="info-value" id="sysHostname">--</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">macOS</span>
+              <span class="info-value" id="sysVersion">--</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Uptime</span>
+              <span class="info-value" id="sysUptime">--</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <footer>
+      <p>Atualizado em tempo real via WebSocket • <span id="lastUpdate">--</span></p>
+    </footer>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
