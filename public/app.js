@@ -128,6 +128,7 @@ socket.on('system-update', (data) => {
   updateCPU(data);
   updateMemory(data);
   updateBattery(data);
+  updateProcesses(data.topProcesses);
 
   // Atualizar timestamp
   const now = new Date();

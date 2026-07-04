@@ -13,6 +13,22 @@ const PORT = 3000;
 // Servir arquivos estáticos
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Função pra formatar processos
+function formatProcesses(processList, totalMem) {
+  return processList
+    .sort((a, b) => {
+      const cpuA = parseFloat(a.cpu) || 0;
+      const cpuB = parseFloat(b.cpu) || 0;
+      return cpuB - cpuA;
+    })
+    .slice(0, 10)
+    .map(p => ({
+      name: p.name,
+      pcpu: parseFloat(p.cpu) || 0,
+      pmem: totalMem > 0 ? ((p.memRss * 1024) / totalMem) * 100 : 0
+    }));
+}
+
 // API REST para dados pontuais
 app.get('/api/system', async (req, res) => {
   try {
@@ -25,9 +41,7 @@ app.get('/api/system', async (req, res) => {
       si.processes()
     ]);
 
-    const topProcesses = processes.list
-      .sort((a, b) => b.pcpu - a.pcpu)
-      .slice(0, 10);
+    const topProcesses = formatProcesses(processes.list, mem.total);
 
     res.json({
       cpu,
@@ -35,7 +49,8 @@ app.get('/api/system', async (req, res) => {
       battery,
       disk: fsSize,
       osInfo,
-      topProcesses
+      topProcesses,
+      uptime: osInfo.uptime
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -48,18 +63,22 @@ io.on('connection', (socket) => {
 
   const sendRealTimeData = async () => {
     try {
-      const [cpu, mem, battery, currentLoad] = await Promise.all([
+      const [cpu, mem, battery, currentLoad, processes] = await Promise.all([
         si.cpu(),
         si.mem(),
         si.battery(),
-        si.currentLoad()
+        si.currentLoad(),
+        si.processes()
       ]);
+
+      const topProcesses = formatProcesses(processes.list, mem.total);
 
       socket.emit('system-update', {
         cpu,
         mem,
         battery,
         currentLoad,
+        topProcesses,
         timestamp: Date.now()
       });
     } catch (err) {
