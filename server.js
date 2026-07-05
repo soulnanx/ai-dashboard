@@ -4,6 +4,7 @@ const { Server } = require('socket.io');
 const si = require('systeminformation');
 const path = require('path');
 const fs = require('fs');
+const { exec } = require('child_process');
 // Node 18+ tem fetch global; não precisa de importar nada
 
 const app = express();
@@ -11,6 +12,39 @@ const server = http.createServer(app);
 const io = new Server(server);
 
 const PORT = 3000;
+
+// ========== CPU Temperature Helper ==========
+/**
+ * Tenta ler a temperatura da CPU.
+ * 1. Tenta via systeminformation (funciona no Linux)
+ * 2. Se retornar null e estiver no macOS, tenta `osx-cpu-temp`
+ * @returns {Promise<object|null>} { main, max } ou null
+ */
+async function getCpuTemperature() {
+  // 1. Tentativa padrão (systeminformation)
+  const temp = await si.cpuTemperature();
+  if (temp && temp.main !== null) {
+    return temp;
+  }
+
+  // 2. Fallback para macOS: tentar osx-cpu-temp
+  return new Promise((resolve) => {
+    exec('osx-cpu-temp 2>/dev/null', { timeout: 3000 }, (error, stdout, stderr) => {
+      if (error || !stdout.trim()) {
+        resolve(null);
+        return;
+      }
+      // Parse: "65.3°C" ou "65.3 C" ou "65.3"
+      const match = stdout.match(/([0-9]+\.?[0-9]*)/);
+      if (match) {
+        const main = parseFloat(match[1]);
+        resolve({ main, max: null, cores: [], socket: [], chipset: null });
+      } else {
+        resolve(null);
+      }
+    });
+  });
+}
 
 // Servir arquivos estáticos
 app.use(express.static(path.join(__dirname, 'public')));
@@ -146,7 +180,7 @@ app.get('/api/system', async (req, res) => {
       si.osInfo(),
       si.processes(),
       si.time(),
-      si.cpuTemperature()
+      getCpuTemperature()
     ]);
 
     const topProcesses = formatProcesses(processes.list, mem.total);
@@ -179,7 +213,7 @@ io.on('connection', (socket) => {
         si.currentLoad(),
         si.processes(),
         si.time(),
-        si.cpuTemperature()
+        getCpuTemperature()
       ]);
 
       const topProcesses = formatProcesses(processes.list, mem.total);
