@@ -137,14 +137,15 @@ function formatProcesses(processList, totalMem) {
 // API REST para dados pontuais
 app.get('/api/system', async (req, res) => {
   try {
-    const [cpu, mem, battery, fsSize, osInfo, processes, timeData] = await Promise.all([
+    const [cpu, mem, battery, fsSize, osInfo, processes, timeData, cpuTemp] = await Promise.all([
       si.cpu(),
       si.mem(),
       si.battery(),
       si.fsSize(),
       si.osInfo(),
       si.processes(),
-      si.time()
+      si.time(),
+      si.cpuTemperature()
     ]);
 
     const topProcesses = formatProcesses(processes.list, mem.total);
@@ -156,7 +157,8 @@ app.get('/api/system', async (req, res) => {
       disk: fsSize,
       osInfo,
       topProcesses,
-      uptime: timeData.uptime || 0
+      uptime: timeData.uptime || 0,
+      cpuTemp: cpuTemp || null
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -169,13 +171,14 @@ io.on('connection', (socket) => {
 
   const sendRealTimeData = async () => {
     try {
-      const [cpu, mem, battery, currentLoad, processes, timeData] = await Promise.all([
+      const [cpu, mem, battery, currentLoad, processes, timeData, cpuTemp] = await Promise.all([
         si.cpu(),
         si.mem(),
         si.battery(),
         si.currentLoad(),
         si.processes(),
-        si.time()
+        si.time(),
+        si.cpuTemperature()
       ]);
 
       const topProcesses = formatProcesses(processes.list, mem.total);
@@ -187,7 +190,8 @@ io.on('connection', (socket) => {
         currentLoad,
         topProcesses,
         uptime: timeData.uptime || 0,
-        timestamp: Date.now()
+        timestamp: Date.now(),
+        cpuTemp: cpuTemp || null
       });
     } catch (err) {
       console.error('Erro ao coletar dados:', err.message);

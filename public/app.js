@@ -127,6 +127,36 @@ function updateSystemInfo(osInfo, uptime) {
   document.getElementById('sysUptime').textContent = formatUptime(uptime);
 }
 
+// Atualizar temperatura da CPU
+function updateTemperature(cpuTemp) {
+  const tempValue = document.getElementById('cpuTemp');
+  const tempMax = document.getElementById('cpuTempMax');
+
+  if (!cpuTemp || cpuTemp.main === null) {
+    tempValue.textContent = 'N/A';
+    tempMax.textContent = 'N/A';
+    return;
+  }
+
+  // cpuTemp.main é a temperatura principal em Celsius
+  // cpuTemp.max é a temperatura máxima (se disponível)
+  const mainTemp = cpuTemp.main || 0;
+  const maxTemp = cpuTemp.max || 0;
+
+  tempValue.textContent = mainTemp.toFixed(1);
+  tempMax.textContent = maxTemp > 0 ? `${maxTemp.toFixed(1)}°C` : 'N/A';
+
+  // Mudar cor baseado na temperatura
+  tempValue.classList.remove('temp-low', 'temp-medium', 'temp-high');
+  if (mainTemp > 80) {
+    tempValue.classList.add('temp-high');
+  } else if (mainTemp > 60) {
+    tempValue.classList.add('temp-medium');
+  } else if (mainTemp > 0) {
+    tempValue.classList.add('temp-low');
+  }
+}
+
 // Mostrar/esconder botão de reconexão
 function toggleReconnectButton(show) {
   const btn = document.getElementById('reconnectBtn');
@@ -146,6 +176,7 @@ socket.on('system-update', (data) => {
   updateMemory(data);
   updateBattery(data);
   updateProcesses(data.topProcesses);
+  updateTemperature(data.cpuTemp);
 
   // Atualizar timestamp
   const now = new Date();
@@ -162,6 +193,7 @@ async function loadInitialData() {
     updateDisk(data.disk);
     updateProcesses(data.topProcesses);
     updateSystemInfo(data.osInfo, data.uptime);
+    updateTemperature(data.cpuTemp);
   } catch (err) {
     console.error('Erro ao carregar dados iniciais:', err);
   }
