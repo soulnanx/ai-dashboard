@@ -235,7 +235,7 @@ io.on('connection', (socket) => {
 
   // Envia imediatamente e depois a cada 2 segundos
   sendRealTimeData();
-  const interval = setInterval(sendRealTimeData, 2000);
+  const interval = setInterval(sendRealTimeData, 5000);
 
   socket.on('disconnect', () => {
     clearInterval(interval);

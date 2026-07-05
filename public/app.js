@@ -407,3 +407,87 @@ function stopOpenRouterAutoRefresh() {
 
 // Inicializar tabs ao carregar a página
 document.addEventListener('DOMContentLoaded', initTabs);
+
+// ========== Toggle WebSocket / HTTP Polling ==========
+let isWebSocketMode = true;
+let httpPollingInterval = null;
+
+/**
+ * Alterna entre modo WebSocket e HTTP Polling.
+ * WebSocket: Dados em tempo real via socket.io (conexão persistente)
+ * HTTP: Requisições simples a cada 5 segundos
+ */
+function toggleConnectionMode() {
+  const btn = document.getElementById('toggleMode');
+
+  if (isWebSocketMode) {
+    // Desconectar WebSocket e iniciar HTTP Polling
+    socket.disconnect();
+    isWebSocketMode = false;
+    btn.textContent = '🔄 HTTP Polling';
+    btn.classList.add('active');
+    startHttpPolling();
+  } else {
+    // Parar HTTP Polling e reconectar WebSocket
+    stopHttpPolling();
+    isWebSocketMode = true;
+    btn.textContent = '⚡ WebSocket';
+    btn.classList.remove('active');
+    socket.connect();
+  }
+}
+
+/**
+ * Inicia o HTTP Polling (busca dados a cada 5 segundos).
+ */
+function startHttpPolling() {
+  if (httpPollingInterval) return;
+
+  // Carregar dados imediatamente
+  fetchSystemData();
+
+  // Depois a cada 5 segundos
+  httpPollingInterval = setInterval(fetchSystemData, 5000);
+}
+
+/**
+ * Para o HTTP Polling.
+ */
+function stopHttpPolling() {
+  if (httpPollingInterval) {
+    clearInterval(httpPollingInterval);
+    httpPollingInterval = null;
+  }
+}
+
+/**
+ * Busca dados do sistema via HTTP (usado no modo Polling).
+ */
+async function fetchSystemData() {
+  try {
+    const response = await fetch('/api/system');
+    const data = await response.json();
+
+    updateCPU(data);
+    updateMemory(data);
+    updateBattery(data);
+    updateProcesses(data.topProcesses);
+    updateTemperature(data.cpuTemp);
+    updateSystemInfo(data.osInfo, data.uptime);
+
+    // Atualizar timestamp
+    const now = new Date();
+    document.getElementById('lastUpdate').textContent =
+      `Última atualização: ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
+  } catch (err) {
+    console.error('Erro ao buscar dados via HTTP:', err);
+  }
+}
+
+// Configurar o botão de toggle
+document.getElementById('toggleMode').addEventListener('click', toggleConnectionMode);
+
+// Parar HTTP Polling quando a página for fechada
+window.addEventListener('beforeunload', () => {
+  stopHttpPolling();
+});
