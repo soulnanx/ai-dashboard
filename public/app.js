@@ -131,10 +131,13 @@ function updateSystemInfo(osInfo, uptime) {
 function updateTemperature(cpuTemp) {
   const tempValue = document.getElementById('cpuTemp');
   const tempMax = document.getElementById('cpuTempMax');
+  const tempNote = document.getElementById('tempNote');
 
   if (!cpuTemp || cpuTemp.main === null) {
     tempValue.textContent = 'N/A';
     tempMax.textContent = 'N/A';
+    // Mostrar nota explicativa no macOS
+    if (tempNote) tempNote.style.display = 'block';
     return;
   }
 
@@ -145,6 +148,9 @@ function updateTemperature(cpuTemp) {
 
   tempValue.textContent = mainTemp.toFixed(1);
   tempMax.textContent = maxTemp > 0 ? `${maxTemp.toFixed(1)}°C` : 'N/A';
+
+  // Esconder nota se temperatura estiver disponível
+  if (tempNote) tempNote.style.display = 'none';
 
   // Mudar cor baseado na temperatura
   tempValue.classList.remove('temp-low', 'temp-medium', 'temp-high');

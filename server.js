@@ -16,6 +16,7 @@ const PORT = 3000;
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json()); // Para ler JSON no body de POST
 
+
 // ========== OpenRouter API Proxy ==========
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY || '';
 const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1';
