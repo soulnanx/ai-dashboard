@@ -408,55 +408,36 @@ function stopOpenRouterAutoRefresh() {
 // Inicializar tabs ao carregar a página
 document.addEventListener('DOMContentLoaded', initTabs);
 
-// ========== Toggle WebSocket / HTTP Polling ==========
+// ========== Toggle WebSocket / HTTP Manual ==========
 let isWebSocketMode = true;
-let httpPollingInterval = null;
 
 /**
- * Alterna entre modo WebSocket e HTTP Polling.
+ * Alterna entre modo WebSocket e HTTP Manual.
  * WebSocket: Dados em tempo real via socket.io (conexão persistente)
- * HTTP: Requisições simples a cada 5 segundos
+ * HTTP: Requisição manual ao clicar em "Atualizar"
  */
 function toggleConnectionMode() {
   const btn = document.getElementById('toggleMode');
+  const refreshBtn = document.getElementById('refreshBtn');
 
   if (isWebSocketMode) {
-    // Desconectar WebSocket e iniciar HTTP Polling
+    // Desconectar WebSocket e entrar em modo HTTP Manual
     socket.disconnect();
     isWebSocketMode = false;
-    btn.textContent = '🔄 HTTP Polling';
+    btn.textContent = '🔄 HTTP Manual';
     btn.classList.add('active');
-    startHttpPolling();
+    // Mostrar botão de atualizar
+    if (refreshBtn) refreshBtn.style.display = 'inline-block';
+    // Buscar dados uma vez ao entrar no modo HTTP
+    fetchSystemData();
   } else {
-    // Parar HTTP Polling e reconectar WebSocket
-    stopHttpPolling();
+    // Voltar para WebSocket
     isWebSocketMode = true;
     btn.textContent = '⚡ WebSocket';
     btn.classList.remove('active');
+    // Esconder botão de atualizar
+    if (refreshBtn) refreshBtn.style.display = 'none';
     socket.connect();
-  }
-}
-
-/**
- * Inicia o HTTP Polling (busca dados a cada 5 segundos).
- */
-function startHttpPolling() {
-  if (httpPollingInterval) return;
-
-  // Carregar dados imediatamente
-  fetchSystemData();
-
-  // Depois a cada 5 segundos
-  httpPollingInterval = setInterval(fetchSystemData, 5000);
-}
-
-/**
- * Para o HTTP Polling.
- */
-function stopHttpPolling() {
-  if (httpPollingInterval) {
-    clearInterval(httpPollingInterval);
-    httpPollingInterval = null;
   }
 }
 
@@ -487,7 +468,10 @@ async function fetchSystemData() {
 // Configurar o botão de toggle
 document.getElementById('toggleMode').addEventListener('click', toggleConnectionMode);
 
+// Configurar o botão de refresh (apenas no modo HTTP)
+document.getElementById('refreshBtn').addEventListener('click', fetchSystemData);
+
 // Parar HTTP Polling quando a página for fechada
 window.addEventListener('beforeunload', () => {
-  stopHttpPolling();
+  // Nada a fazer, não temos mais polling automático
 });
